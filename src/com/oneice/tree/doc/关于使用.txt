@@ -1,0 +1,21 @@
+配置文件的名称是mysql.properties，配置文件必须放置在编译根路径上
+#连接数据库的url
+url=jdbc:mysql://localhost:3306/account?useUnicode=true&characterEncoding=utf-8
+#连接数据库的用户名
+name=Ov4j7fKiCzY=
+#连接数据库的密码
+password=Ov4j7fKiCzY=
+#连接数据库的驱动
+driver=com.mysql.jdbc.Driver
+#保持的初始连接数目
+idlesize=50
+#连接池中可以保存的最大连接数目
+maxsize=200
+#当连接数目不够时，自动增加的数目
+addsize=50
+#是否加密
+encrypt=true
+
+在程序中使用，建立mysql.properties文件后
+new TreeDataSourceFactory类，然后使用TreeDataSourceFactory类中的createDataConnectionPool()方法
+得到数据库连接池

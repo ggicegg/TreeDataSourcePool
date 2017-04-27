@@ -1,0 +1,9 @@
+如果用户使用默认的解密器
+直接在mysql.properties配置中声明一组属性。false或者不设置代表不解密，true代表需要解密
+#是否加密
+ecrypt=false
+
+如果用户需要自定义的解密器，
+在使用时需要自己实现EncryptProperties接口中的方法，可参照默认实现类EncryptPropertiesDefault
+然后在使用TreeDataSourceFactory构建连接池时使用带解密器的构造方法，即可实现解密
+public TreeDataSourceFactory(EncryptProperties encryptProperties)
