@@ -39,7 +39,9 @@ public class ConnectionHandler implements InvocationHandler{
 				}
 				treeDataSourcePool.getPool().add((Connection) proxy);
 				treeDataSourcePool.inused--;
-				logger.info("返还连接到池中");
+				Method setAutoCommit = proxy.getClass().getMethod("setAutoCommit", boolean.class);
+				setAutoCommit.invoke(proxy, true);
+				logger.info("连接返还到池中，设置自动提交为true");
 			}finally{
 				TreeDataSourcePool.writeLock.unlock();
 			}

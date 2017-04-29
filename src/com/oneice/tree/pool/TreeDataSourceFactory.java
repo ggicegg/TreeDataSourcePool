@@ -39,7 +39,6 @@ public class TreeDataSourceFactory {
 	 * @param encryptProperties
 	 */
 	public TreeDataSourceFactory(EncryptProperties encryptProperties){
-		treeDataSourcePool = new TreeDataSourcePool();
 		covertProperties = new CovertProperties(encryptProperties);
 		conf = covertProperties.getProperties();
 	}
@@ -49,6 +48,7 @@ public class TreeDataSourceFactory {
 	 * @author ice
 	 */
 	public TreeDataSourcePool createDataConnectionPool(){
+		treeDataSourcePool = new TreeDataSourcePool();
 		String value = "";
 		int size = 0;
 		value = conf.getProperty(URL);
