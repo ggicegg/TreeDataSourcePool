@@ -6,7 +6,9 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Logger;
 
@@ -20,8 +22,9 @@ public class TreeDataSourcePool implements DataSource {
 	// 使用相对效率较高的读写锁
 	public static ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
 	public static Lock readLock = readWriteLock.readLock();
+	public static Condition condition = null;
 	public static Lock writeLock = readWriteLock.writeLock();
-
+	public static ReentrantLock lock = new ReentrantLock();
 	private ProxyConnectionFactory proxyConnectionFactory;
 
 	// 存放连接的集合
@@ -41,8 +44,7 @@ public class TreeDataSourcePool implements DataSource {
 	private static int maxsize;
 
 	// 正在使用中的连接数
-	public static int inused;
-	
+	public static int inused = 0;
 
 	public static int getInused() {
 		return inused;
@@ -104,6 +106,10 @@ public class TreeDataSourcePool implements DataSource {
 		TreeDataSourcePool.maxsize = maxsize;
 	}
 
+	public TreeDataSourcePool() {
+		condition = lock.newCondition();
+	}
+
 	/**
 	 * 连接池的关闭
 	 * 
@@ -115,8 +121,8 @@ public class TreeDataSourcePool implements DataSource {
 	}
 
 	/**
-	 * 加载空转的连接
-	 * 使用protected将其保护起来
+	 * 加载空转的连接 使用protected将其保护起来
+	 * 
 	 * @param size
 	 *            加载的数目
 	 * @author ice
@@ -135,14 +141,15 @@ public class TreeDataSourcePool implements DataSource {
 	 * @author ice
 	 */
 	private void addConn(int size) {
-		writeLock.lock();
-		
+		// writeLock.lock();
+		// lock.lock();
 		proxyConnectionFactory = new ProxyConnectionFactory(this);
 		for (int i = 0; i < size; i++) {
 			Connection connection = proxyConnectionFactory.createProxyConnecion();
 			pool.add(connection);
 		}
-		writeLock.unlock();
+		// writeLock.unlock();
+		// lock.unlock();
 	}
 
 	@Override
@@ -151,29 +158,40 @@ public class TreeDataSourcePool implements DataSource {
 	 */
 	public Connection getConnection() throws SQLException {
 		// TODO Auto-generated method stub
-		readLock.lock();
+		// readLock.lock();
+		lock.lock();
 		Connection connection = null;
 		try {
-			if (pool.size() == 0) {
+			while (pool.size() == 0) {
+				// wait();
+				// condition.await();
 				if (inused == maxsize) {
-//					logger.info("获取连接失败，当前使用的连接以达到最大值");
-					wait();
+					logger.info("获取连接失败，请等待，当前使用的连接以达到最大值");
+					// wait();
+					condition.await();
 				} else {
-					//如果剩余空间不够每次增加连接数，就只将剩下的空位填满
+					// 如果剩余空间不够每次增加连接数，就只将剩下的空位填满
 					int trueSize = 0;
-					trueSize = (maxsize-pool.size())>addsize?addsize:(maxsize-pool.size());
+					trueSize = (maxsize - pool.size()) > addsize ? addsize : (maxsize - pool.size());
 					addConn(trueSize);
-					notifyAll();
+					// notifyAll();
+					try{
+						condition.notifyAll();
+					}catch(Exception e){
+						
+					}
 				}
 			}
 			connection = pool.removeFirst();
 			inused++;
+			logger.info("当前使用了" + inused + "个连接,连接池的大小为" + pool.size());
 			return (Connection) connection;
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} finally {
-			readLock.unlock();
+			// readLock.unlock();
+			lock.unlock();
 		}
 		return connection;
 	}
